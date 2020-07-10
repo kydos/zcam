@@ -1,5 +1,5 @@
 # ZCam -- Streaming video with zenoh
-This is a simple application that shows how to stream HD Video with zenoh
+This is a simple application that shows how to stream HD Video with [zenoh](http://zenoh.io)
 
 ## Dependencies
 In order to build and run ZCam you need to have [Rust](rust-lang.org) and [OpenCV]() installed on your machine. 
