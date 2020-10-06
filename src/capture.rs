@@ -11,7 +11,7 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use clap::{App, Arg};
+use clap::{App, Arg, Values};
 use zenoh::net::*;
 use zenoh::net::ResKey::*;
 use opencv::{
@@ -28,18 +28,28 @@ async fn main() {
     let args = App::new("zenoh-net videocapture example")    
     .arg(Arg::from_usage("-m, --mode=[MODE] 'The zenoh session mode.")
         .possible_values(&["peer", "client"]).default_value("peer"))
-    .arg(Arg::from_usage("-p, --path=[path] 'The zenoh path on which the video will be published."))
+    .arg(Arg::from_usage("-p, --path=[path] 'The zenoh path on which the video will be published.")
+        .default_value("/demo/zcam"))
     .arg(Arg::from_usage("-e, --peer=[LOCATOR]...  'Peer locators used to initiate the zenoh session.'"))
         .get_matches();
 
-    let config = Config::default()
-        .mode(args.value_of("mode").map(|m| Config::parse_mode(m)).unwrap().unwrap())
-        .add_peers(args.values_of("peer").map(|p| p.collect()).or_else(|| Some(vec![])).unwrap());
+    let mut config = config::empty();
+    config.push((
+        config::ZN_MODE_KEY,
+        args.value_of("mode").unwrap().as_bytes().to_vec(),
+    ));
+    for peer in args
+        .values_of("peer")
+        .or_else(|| Some(Values::default()))
+        .unwrap()
+    {
+        config.push((config::ZN_PEER_KEY, peer.as_bytes().to_vec()));
+    }
 
     let path = args.value_of("path").unwrap();
 
     println!("Openning session...");
-    let session = open(config, None).await.unwrap();
+    let session = open(config).await.unwrap();
 
     let reskey = RId(session.declare_resource(&path.into()).await.unwrap());
     let _publ = session.declare_publisher(&reskey).await.unwrap();

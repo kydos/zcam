@@ -12,7 +12,7 @@
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
 #![feature(async_closure)]
-use clap::{App, Arg};
+use clap::{App, Arg, Values};
 use futures::prelude::*;
 use zenoh::net::*;
 use opencv::{
@@ -28,30 +28,39 @@ async fn main() {
     let args = App::new("zenoh-net video display example")
     .arg(Arg::from_usage("-m, --mode=[MODE] 'The zenoh session mode.")
         .possible_values(&["peer", "client"]).default_value("peer"))
-    .arg(Arg::from_usage("-p, --path=[path] 'The zenoh path on which the video will be published."))
-
+    .arg(Arg::from_usage("-p, --path=[path] 'The zenoh path on which the video will be published.")
+        .default_value("/demo/zcam"))
     .arg(Arg::from_usage("-e, --peer=[LOCATOR]...  'Peer locators used to initiate the zenoh session.'"))
         .get_matches();
 
     let path = args.value_of("path").unwrap();
-    let config = Config::default()
-        .mode(args.value_of("mode").map(|m| Config::parse_mode(m)).unwrap().unwrap())
-        .add_peers(args.values_of("peer").map(|p| p.collect()).or_else(|| Some(vec![])).unwrap());
+
+    let mut config = config::empty();
+    config.push((
+        config::ZN_MODE_KEY,
+        args.value_of("mode").unwrap().as_bytes().to_vec(),
+    ));
+    for peer in args
+        .values_of("peer")
+        .or_else(|| Some(Values::default()))
+        .unwrap()
+    {
+        config.push((config::ZN_PEER_KEY, peer.as_bytes().to_vec()));
+    }
 
     println!("Openning session...");
-    let session = open(config, None).await.unwrap();
+    let session = open(config).await.unwrap();
     let sub_info = SubInfo {
         reliability: Reliability::Reliable,
         mode: SubMode::Push,
         period: None
     };
-    let sub = session.declare_subscriber(&path.into(), &sub_info).await.unwrap();
-
+    let mut sub = session.declare_subscriber(&path.into(), &sub_info).await.unwrap();
 
     let window = "video";
     highgui::named_window(window, 1).unwrap();
 
-    sub.clone().for_each(async move |sample| {
+    sub.stream().for_each(async move |sample| {
         let decoded = opencv::imgcodecs::imdecode(
             &opencv::types::VectorOfu8::from_iter(sample.payload.to_vec()), 
             opencv::imgcodecs::IMREAD_COLOR).unwrap();
@@ -65,6 +74,6 @@ async fn main() {
         highgui::wait_key(10).unwrap();
     }).await;
 
-    session.undeclare_subscriber(sub).await.unwrap();
+    sub.undeclare().await.unwrap();
     session.close().await.unwrap();
 }
