@@ -28,10 +28,14 @@ async fn main() {
     let args = App::new("zenoh-net videocapture example")    
     .arg(Arg::from_usage("-m, --mode=[MODE] 'The zenoh session mode.")
         .possible_values(&["peer", "client"]).default_value("peer"))
-    .arg(Arg::from_usage("-p, --path=[path] 'The zenoh path on which the video will be published.")
-        .default_value("/demo/zcam"))
     .arg(Arg::from_usage("-e, --peer=[LOCATOR]...  'Peer locators used to initiate the zenoh session.'"))
-        .get_matches();
+    .arg(Arg::from_usage("-p, --path=[PATH] 'The zenoh path on which the video will be published.")
+        .default_value("/demo/zcam"))
+    .arg(Arg::from_usage("-r, --resolution=[RESOLUTION] 'The resolution of the published video.")
+        .default_value("600x400"))
+    .arg(Arg::from_usage("-d, --delay=[DELAY] 'The delay between each frame in milliseconds.")
+        .default_value("40"))
+    .get_matches();
 
     let mut config = config::empty();
     config.push((
@@ -47,6 +51,9 @@ async fn main() {
     }
 
     let path = args.value_of("path").unwrap();
+    let resolution = args.value_of("resolution").unwrap()
+        .split('x').map(|s| s.parse::<i32>().unwrap()).collect::<Vec<i32>>();
+    let delay = args.value_of("delay").unwrap().parse::<u64>().unwrap();
 
     println!("Openning session...");
     let session = open(config).await.unwrap();
@@ -69,15 +76,16 @@ async fn main() {
     loop {
         let mut frame = core::Mat::default().unwrap();
         cam.read(&mut frame).unwrap();
-        // let mut reduced = Mat::default().unwrap();
-        // opencv::imgproc::resize(&frame, &mut reduced, opencv::core::Size::new(150, 100), 0.0, 0.0 , opencv::imgproc::INTER_LINEAR).unwrap();
+
+        let mut reduced = Mat::default().unwrap();
+        opencv::imgproc::resize(&frame, &mut reduced, opencv::core::Size::new(resolution[0], resolution[1]), 0.0, 0.0 , opencv::imgproc::INTER_LINEAR).unwrap();
     
         let mut buf = opencv::types::VectorOfu8::new();
-        opencv::imgcodecs::imencode(".jpeg", &frame, &mut buf, &encode_options).unwrap();
+        opencv::imgcodecs::imencode(".jpeg", &reduced, &mut buf, &encode_options).unwrap();
 
         // println!("{}x{} => {} bytes", frame.size().unwrap().width, frame.size().unwrap().height, buf.len());
 
         session.write(&reskey, buf.to_vec().into()).await.unwrap();
-        async_std::task::sleep(std::time::Duration::new(0, 10000000)).await;
+        async_std::task::sleep(std::time::Duration::from_millis(delay)).await;
     }
 }
