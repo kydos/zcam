@@ -57,10 +57,10 @@ async fn main() {
     };
     let mut sub = session.declare_subscriber(&path.into(), &sub_info).await.unwrap();
 
-    let window = "video";
+    let window = &format!("[{}] Press 'q' to quit.", path);
     highgui::named_window(window, 1).unwrap();
 
-    sub.stream().for_each(async move |sample| {
+    while let Some(sample) = sub.stream().next().await {
         let decoded = opencv::imgcodecs::imdecode(
             &opencv::types::VectorOfu8::from_iter(sample.payload.to_vec()), 
             opencv::imgcodecs::IMREAD_COLOR).unwrap();
@@ -71,8 +71,10 @@ async fn main() {
             highgui::imshow(window, &decoded).unwrap();
         }
 
-        highgui::wait_key(10).unwrap();
-    }).await;
+        if highgui::wait_key(10).unwrap() == 113 { // 'q'
+            break;
+        }
+    }
 
     sub.undeclare().await.unwrap();
     session.close().await.unwrap();
