@@ -18,7 +18,7 @@ $ cargo build --release
 Once build you can run it as follows:
 
 ```
-$ ./target/release/zdisplay /video/yourname
+$ ./target/release/zdisplay -p /demo/video/yourname
 
-$ ./target/release/zcapture /video/yourname
+$ ./target/release/zcapture -p /demo/video/yourname
 ```
