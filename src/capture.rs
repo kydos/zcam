@@ -25,7 +25,7 @@ async fn main() {
     // initiate logging
     env_logger::init();
 
-    let args = App::new("zenoh-net videocapture example")    
+    let args = App::new("zenoh-net videocapture example")
     .arg(Arg::from_usage("-m, --mode=[MODE] 'The zenoh session mode.")
         .possible_values(&["peer", "client"]).default_value("peer"))
     .arg(Arg::from_usage("-e, --peer=[LOCATOR]...  'Peer locators used to initiate the zenoh session.'"))
@@ -38,16 +38,16 @@ async fn main() {
     .get_matches();
 
     let mut config = config::empty();
-    config.push((
+    config.insert(
         config::ZN_MODE_KEY,
-        args.value_of("mode").unwrap().as_bytes().to_vec(),
-    ));
+        String::from(args.value_of("mode").unwrap())
+    );
     for peer in args
         .values_of("peer")
         .or_else(|| Some(Values::default()))
         .unwrap()
     {
-        config.push((config::ZN_PEER_KEY, peer.as_bytes().to_vec()));
+        config.insert(config::ZN_PEER_KEY, String::from(peer));
     }
 
     let path = args.value_of("path").unwrap();
@@ -79,7 +79,7 @@ async fn main() {
 
         let mut reduced = Mat::default().unwrap();
         opencv::imgproc::resize(&frame, &mut reduced, opencv::core::Size::new(resolution[0], resolution[1]), 0.0, 0.0 , opencv::imgproc::INTER_LINEAR).unwrap();
-    
+
         let mut buf = opencv::types::VectorOfu8::new();
         opencv::imgcodecs::imencode(".jpeg", &reduced, &mut buf, &encode_options).unwrap();
 

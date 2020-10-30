@@ -36,16 +36,16 @@ async fn main() {
     let path = args.value_of("path").unwrap();
 
     let mut config = config::empty();
-    config.push((
+    config.insert(
         config::ZN_MODE_KEY,
-        args.value_of("mode").unwrap().as_bytes().to_vec(),
-    ));
+        String::from(args.value_of("mode").unwrap()),
+    );
     for peer in args
         .values_of("peer")
         .or_else(|| Some(Values::default()))
         .unwrap()
     {
-        config.push((config::ZN_PEER_KEY, peer.as_bytes().to_vec()));
+        config.insert(config::ZN_PEER_KEY, String::from(peer));
     }
 
     println!("Openning session...");
@@ -62,7 +62,7 @@ async fn main() {
 
     while let Some(sample) = sub.stream().next().await {
         let decoded = opencv::imgcodecs::imdecode(
-            &opencv::types::VectorOfu8::from_iter(sample.payload.to_vec()), 
+            &opencv::types::VectorOfu8::from_iter(sample.payload.to_vec()),
             opencv::imgcodecs::IMREAD_COLOR).unwrap();
 
         if decoded.size().unwrap().width > 0 {
