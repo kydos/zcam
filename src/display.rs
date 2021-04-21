@@ -14,11 +14,8 @@
 #![feature(async_closure)]
 use clap::{App, Arg, Values};
 use futures::prelude::*;
+use opencv::{highgui, prelude::*};
 use zenoh::net::*;
-use opencv::{
-    highgui,
-    prelude::*,
-};
 
 #[async_std::main]
 async fn main() {
@@ -26,11 +23,20 @@ async fn main() {
     env_logger::init();
 
     let args = App::new("zenoh-net video display example")
-    .arg(Arg::from_usage("-m, --mode=[MODE] 'The zenoh session mode.")
-        .possible_values(&["peer", "client"]).default_value("peer"))
-    .arg(Arg::from_usage("-p, --path=[path] 'The zenoh path on which the video will be published.")
-        .default_value("/demo/zcam"))
-    .arg(Arg::from_usage("-e, --peer=[LOCATOR]...  'Peer locators used to initiate the zenoh session.'"))
+        .arg(
+            Arg::from_usage("-m, --mode=[MODE] 'The zenoh session mode.")
+                .possible_values(&["peer", "client"])
+                .default_value("peer"),
+        )
+        .arg(
+            Arg::from_usage(
+                "-p, --path=[path] 'The zenoh path on which the video will be published.",
+            )
+            .default_value("/demo/zcam"),
+        )
+        .arg(Arg::from_usage(
+            "-e, --peer=[LOCATOR]...  'Peer locators used to initiate the zenoh session.'",
+        ))
         .get_matches();
 
     let path = args.value_of("path").unwrap();
@@ -53,9 +59,12 @@ async fn main() {
     let sub_info = SubInfo {
         reliability: Reliability::Reliable,
         mode: SubMode::Push,
-        period: None
+        period: None,
     };
-    let mut sub = session.declare_subscriber(&path.into(), &sub_info).await.unwrap();
+    let mut sub = session
+        .declare_subscriber(&path.into(), &sub_info)
+        .await
+        .unwrap();
 
     let window = &format!("[{}] Press 'q' to quit.", path);
     highgui::named_window(window, 1).unwrap();
@@ -63,7 +72,9 @@ async fn main() {
     while let Some(sample) = sub.stream().next().await {
         let decoded = opencv::imgcodecs::imdecode(
             &opencv::types::VectorOfu8::from_iter(sample.payload.to_vec()),
-            opencv::imgcodecs::IMREAD_COLOR).unwrap();
+            opencv::imgcodecs::IMREAD_COLOR,
+        )
+        .unwrap();
 
         if decoded.size().unwrap().width > 0 {
             // let mut enlarged = Mat::default().unwrap();
@@ -71,7 +82,8 @@ async fn main() {
             highgui::imshow(window, &decoded).unwrap();
         }
 
-        if highgui::wait_key(10).unwrap() == 113 { // 'q'
+        if highgui::wait_key(10).unwrap() == 113 {
+            // 'q'
             break;
         }
     }
