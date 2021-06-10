@@ -68,7 +68,7 @@ fn parse_args() -> (ConfigProperties, String, Vec<i32>, u64){
         .arg(Arg::from_usage("-p, --path=[PATH] 'The zenoh path on which the video will be published.")
             .default_value("/demo/zcam"))
         .arg(Arg::from_usage("-r, --resolution=[RESOLUTION] 'The resolution of the published video.")
-            .default_value("600x400"))
+            .default_value("640x360"))
         .arg(Arg::from_usage("-d, --delay=[DELAY] 'The delay between each frame in milliseconds.")
             .default_value("40"))
         .get_matches();
