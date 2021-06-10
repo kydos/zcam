@@ -9,11 +9,11 @@ edition = "2018"
 
 [dependencies]
 zenoh = {git = "https://github.com/eclipse-zenoh/zenoh", branch="master"}
-futures = "0.3.5"
+futures = "0.3.15"
 clap = "2"
 log = "0.4"
 env_logger = "0.8.3"
-opencv = "0.49.1"
+opencv = "0.53.0"
 
 [dependencies.async-std]
 version = "1.9.0"
